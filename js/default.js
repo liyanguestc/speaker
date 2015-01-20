@@ -1,5 +1,9 @@
 var camera, renderer, scene;
 var meshArray = [];
+var neutralMesh;
+var mouthOpenMesh;
+var deformedMesh;
+var newMeshReady = false;
 
 head.ready(function() {
     Init();
@@ -25,8 +29,8 @@ function Init() {
         compFac: _depthCompressionFactor,
         devicePixelRatio: 1
     });
-    renderer.shadowMapEnabled = true;
-    renderer.shadowMapSoft = true;
+   // renderer.shadowMapEnabled = true;
+  //  renderer.shadowMapSoft = true;
     Leia_addRender(renderer);
 
     //add object to Scene
@@ -41,7 +45,6 @@ function Init() {
 
 function animate() {
     requestAnimationFrame(animate);
-
     //set mesh animation
     for (var i = 0; i < meshArray.length; i++) {
         var curMeshGroup = meshArray[i].meshGroup;
@@ -54,6 +57,23 @@ function animate() {
                 break;
         }
     }
+    if (newMeshReady) {
+
+		deformedMesh.geometry.dynamic = true;
+
+		// reset to neutral
+		for (v = 0; v < neutralMesh.geometry.vertices.length; v++)
+			deformedMesh.geometry.vertices[v] = neutralMesh.geometry.vertices[v].clone();
+      
+        w = Math.cos(4*LEIA.time) * 0.5 + 0.5;
+		for (v = 0; v < deformedMesh.geometry.vertices.length; v++) {
+			deformedMesh.geometry.vertices[v].add( mouthOpenMesh.geometry.vertices[v].clone().multiplyScalar(w) );
+		}
+
+		deformedMesh.geometry.dynamic = true;
+		deformedMesh.geometry.verticesNeedUpdate = true;
+		deformedMesh.position.z = -5;
+	}
     renderer.Leia_render({
         scene: scene,
         camera: camera,
@@ -71,54 +91,69 @@ function animate() {
 function addObjectsToScene() {
     //Add your objects here
     //API to add STL Object
-    /*  Leia_LoadSTLModel({
-        path: 'resource/LEIA1.stl'
+     Leia_LoadSTLModel({
+        path: 'resource/Neutral.stl'
+    },function(mesh){
+      neutralMesh = mesh;
+    //  mesh.material.side = THREE.DoubleSide;
+    //  mesh.castShadow = true;
+    //  mesh.receiveShadow = true;
+   //   mesh.material.metal = true;
+      neutralMesh.scale.set(30, 30, 30);
+      neutralMesh.position.set(0, 0, 0);
+      neutralMesh.rotation.y = 3.14;
+	  neutralMesh.rotation.z = 3.14;
+     
+    });
+  
+  Leia_LoadSTLModel({
+        path: 'resource/Neutral.stl'
     },function(mesh){
       mesh.material.side = THREE.DoubleSide;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.material.metal = true;
-      mesh.scale.set(60, 60, 60);
+      mesh.scale.set(30, 30, 30);
       mesh.position.set(0, 0, 0);
+      mesh.rotation.y = 3.14;
+	  mesh.rotation.z = 3.14;
       var group = new THREE.Object3D();
       group.add(mesh);
       scene.add(group);
       meshArray.push({
         meshGroup: group,
-        name: 'LEIA1'
+        name: 'Neutral'
       });
-    });*/
+    });
+  
+  
+  Leia_LoadSTLModel({
+        path: 'resource/13_JawO_CAU2627.stl'
+    },function(mesh){
+      mouthOpenMesh = mesh;
+      mouthOpenMesh.scale.set(30, 30, 30);
+	  mouthOpenMesh.rotation.y = 3.14;
+	  mouthOpenMesh.rotation.z = 3.14;
+      for (v = 0; v < mouthOpenMesh.geometry.vertices.length; v++)
+		mouthOpenMesh.geometry.vertices[v].sub(neutralMesh.geometry.vertices[v]);
+      newMeshReady = true;
+    });
 
-    //Add Text
-    var helloText = createText({
-        text: "Hello",
-        size: 15
-    });
-    helloText.position.set(-20, -5, 3);
-    helloText.rotation.set(0, 0, 0);
-    helloText.castShadow = true;
-    helloText.receiveShadow = true;
-    var helloGroup = new THREE.Object3D();
-    helloGroup.add(helloText);
-    scene.add(helloGroup);
-    meshArray.push({
-        meshGroup: helloGroup,
-        name: "helloworld"
-    });
+  
 
     //add background texture
     var backgroundPlane = Leia_createTexturePlane({
-        filename: 'resource/world-map-background2.jpg',
+        filename: 'resource/1577666c.jpg',
         width: 100,
         height: 75
     });
-    backgroundPlane.position.z = -8;
+    backgroundPlane.position.z = -20;
     backgroundPlane.castShadow = false;
     backgroundPlane.receiveShadow = true;
     scene.add(backgroundPlane);
   
   //add center plane
-   var centerPlane = Leia_createTexturePlane({
+ /*  var centerPlane = Leia_createTexturePlane({
         filename: 'resource/crack001.png',
         width: 100,
         height: 75,
@@ -126,7 +161,7 @@ function addObjectsToScene() {
      
     });
     centerPlane.position.z = 0;
-    scene.add(centerPlane);
+    scene.add(centerPlane);*/
 }
 
 function createText(parameters) {
